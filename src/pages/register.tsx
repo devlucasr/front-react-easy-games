@@ -49,12 +49,15 @@ const Register = () => {
       })
       if (data) {
         toast.success('Cadastro realizado com sucesso!', {
-          position: "top-right",
+          position: 'top-right',
           autoClose: 3000,
           hideProgressBar: true,
           icon: <FaCheckCircle />
         })
-        router.push('/login')
+      
+        setTimeout(() => {
+          router.push('/login')
+        }, 3000)
       }
     } catch (error) {
       if (error instanceof Error) {

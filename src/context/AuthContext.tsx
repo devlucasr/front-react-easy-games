@@ -2,6 +2,7 @@ import { createContext, useState, useEffect, ReactNode, useContext } from 'react
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { User } from '../types/types'
+import socket from '../utils/socket'
 
 interface AuthContextType {
   user: User | null
@@ -33,7 +34,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signIn = async (credentials: { email: string; senha: string }): Promise<{ user: User; token: string }> => {
     try {
-      const response = await axios.post('http://192.168.1.19:8080/user/login', { ...credentials })
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_URL_BACKEND}/user/login`, { ...credentials })
       const { user, token } = response.data
   
       if (user && token) {
@@ -42,6 +43,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   
         localStorage.setItem('user', JSON.stringify(user))
         localStorage.setItem('token', token)
+  
+        if (!socket.connected) {
+          socket.connect()
+        }
+        socket.emit('join', user.id)
   
         router.push('/')
         return { user, token }
@@ -54,8 +60,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }
   
   
-
   const signOut = () => {
+    if (user?.id) {
+      socket.emit('leave', user.id)
+    }
+  
+    socket.disconnect()
     setUser(null)
     setToken(null)
     localStorage.removeItem('user')

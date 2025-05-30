@@ -9,7 +9,7 @@ export const registerUser = async (userData: {
   senha: string
 }) => {
   try {
-    const response = await axios.post('http://192.168.1.19:8080/user/register', userData)
+    const response = await axios.post(`${process.env.NEXT_PUBLIC_URL_BACKEND}/user/register`, userData)
     return response.data
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
@@ -22,34 +22,39 @@ export const registerUser = async (userData: {
 
 export const updateUser = async (
   userId: number,
-  userData: {
+  userData?: {
     nome?: string;
     sobrenome?: string;
     celular?: string;
     cep?: string;
   },
-  token: string,
+  token?: string,
   foto?: File,
   oldFotoUrl?: string,
 ) => {
   try {
-    const response = await axios.patch(
-      `http://192.168.1.19:8080/user/${userId}`,
-      userData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    if (userData){
+      const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_URL_BACKEND}/user/${userId}`,
+        userData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return { userData: response.data };
+    }
+
     if (foto) {
       const formData = new FormData();
       formData.append('foto', foto);
       formData.append('oldFotoUrl', oldFotoUrl ?? "")
 
       const uploadResponse = await axios.post(
-        `http://192.168.1.19:8080/user/${userId}/upload-foto`,
+        `${process.env.NEXT_PUBLIC_URL_BACKEND}/user/${userId}/upload-foto`,
         formData,
         {
           headers: {
@@ -59,10 +64,8 @@ export const updateUser = async (
         }
       );
 
-      return { userData: response.data, photoData: uploadResponse.data };
+      return { photoData: uploadResponse.data };
     }
-
-    return { userData: response.data };
 
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response) {
@@ -72,3 +75,24 @@ export const updateUser = async (
     }
   }
 };
+
+export const getUserById = async (userId: string, token: string) => {
+  try {
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_URL_BACKEND}/user/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    return response.data
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response?.data?.message || 'Erro ao buscar usuário.')
+    } else {
+      throw new Error('Erro desconhecido ao buscar usuário.')
+    }
+  }
+}

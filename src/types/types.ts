@@ -35,8 +35,8 @@ export interface AnuncioCreate {
   createdAt?: string;
   updatedAt?: string;
 }
-
 export interface PropostaCreate{
+    anuncioId: number,
     valor?: number,
     mensagem: string
 }
@@ -60,6 +60,11 @@ export interface responseCreteAnuncio {
   }
 }
 
+export interface responseAnuncioUpdate {
+  message: string
+  deletado: boolean
+}
+
 export interface Anuncio {
   id: number;
   titulo: string;
@@ -69,11 +74,49 @@ export interface Anuncio {
   troca: boolean;
   status: 'aberto' | 'negociando' | 'fechado';
   fotoUrl?: string;
+  foto?: File;
   userId: number;
+  user: User
   consoleId: number;
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Avaliacao {
+  id: number
+  estrelas: number
+  comentario: string
+  createdAt: Date
+  updatedAt: Date
+  avaliadorId: number
+  avaliadoId: number
+  anuncioId: number
+  propostaId: number
+}
+
+export interface responseProposta {
+  id: number
+  valor: number
+  mensagem: string
+  status: StatusProposta
+  userId: number
+  anuncioId: number
+  createdAt: string
+  updatedAt: string
+  tipo: string,
+  anuncio: Anuncio
+  user: User
+  avaliacao: Avaliacao
+}
+
+export enum StatusProposta{
+  Pendente = 'pendente',
+  Negociando = 'negociando',
+  Fechada = 'fechada',
+  Recusada = 'recusada',
+}
+
+export type StatusAnuncio = "todos" | "aberto" | "negociando" | "fechado"
 
 
 export enum ConsoleEnum {

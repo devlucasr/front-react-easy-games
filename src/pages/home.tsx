@@ -7,6 +7,7 @@ import { fetchAnuncios, createAnuncio } from '../services/anuncioService';
 import HeaderHome from "../components/HeaderHome";
 import { toast, ToastContainer, Bounce } from 'react-toastify'
 import { AnuncioCreate, PropostaCreate, Anuncio } from '../types/types';
+import { createProposta } from '@/services/propostaService';
 
 const consoleImages: Record<number, string> = {
     1: '/images/ps4.png',
@@ -34,6 +35,7 @@ const HomePage = () => {
     const router = useRouter();
     const [user, setUser] = useState<boolean>(false);
     const [newProposta, setNewProposta] = useState<PropostaCreate>({
+        anuncioId: 0,
         valor: 0,
         mensagem: ''
     })
@@ -89,6 +91,7 @@ const HomePage = () => {
             const data = await fetchAnuncios(userId, token, excludeUser);
             setAnuncios(data);
         } catch (error) {
+            setAnuncios([])
             setError(`Falha ao carregar anúncios: ${error}`);
         } finally {
             setLoading(false);
@@ -97,7 +100,7 @@ const HomePage = () => {
 
     const fetchUserData = useCallback (async (userId: string, token: string) => {
         try {
-            const response = await fetch(`http://192.168.1.19:8080/user/${userId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_URL_BACKEND}/user/${userId}`, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -146,12 +149,12 @@ const HomePage = () => {
                     });
                     setButtonLoading(false);
                     closeModalCreateAnuncio()
+                    return;
                 }
-            }else {
-                handleSignOut();
-                router.replace('/login');
-                return;
             }
+            handleSignOut();
+            router.replace('/login');
+            return;
             
         } catch (error) {
             if (error instanceof Error) {
@@ -181,23 +184,88 @@ const HomePage = () => {
     }, [router, handleSignOut]);
 
     const handleCreateProposta = useCallback (async (newProposta: PropostaCreate) => {
-
-    }, [])
-
-    const openModalProposta = (tipo: string) => {
         const token = localStorage.getItem('token');
-        if (!token){
+        setButtonLoading(true);
+        try {
+            if(token){
+                const response = await createProposta(newProposta, token)
+
+                if (response.message === "Token inválido") {
+                    handleSignOut();
+                    return;
+                }
+
+                if (response.cadastrada === true){
+                    toast.success('Proposta criada com sucesso!', {
+                        position: 'top-right',
+                        autoClose: 3000,
+                        hideProgressBar: true,
+                        closeOnClick: true,
+                        pauseOnFocusLoss: false,
+                        pauseOnHover: true,
+                        icon: <MdCheckCircle/>
+                    });
+                    setButtonLoading(false);
+                    closeModalProposta()
+                    return;
+                }
+
+                if (response.status === 'pendente'){
+                    toast.success(response.message, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: true,
+                        className: 'toast-error',
+                        progressClassName: 'toast-progress-bar',
+                        icon: <MdCancel/>,
+                        transition: Bounce
+                    });
+                    setButtonLoading(false);
+                    return;
+                }
+            }
+            handleSignOut();
+            router.replace('/login');
+            return;
+        } catch (error) {
+            if (error instanceof Error) {
+                toast.error(error.message || 'Falha ao realizar o proposta. Tente novamente.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: true,
+                    className: 'toast-error',
+                    progressClassName: 'toast-progress-bar',
+                    icon: <MdCancel/>,
+                    transition: Bounce
+                })
+                setButtonLoading(false);
+            }else{
+                toast.error('Falha ao realizar o proposta. Tente novamente.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: true,
+                    className: 'toast-error',
+                    progressClassName: 'toast-progress-bar',
+                    icon: <MdCancel/>,
+                    transition: Bounce
+                })
+                setButtonLoading(false);
+            }
+        }
+    }, [router, handleSignOut])
+
+    const openModalProposta = (type: string, anuncioId: number) => {
+        if (!user){
             router.replace('/login');
         }
-        setNewProposta({ valor: 0, mensagem: '' });
-        setModalType(tipo);
+        setModalType(type)
+        setNewProposta({ anuncioId: anuncioId, valor: 0, mensagem: ''});
         setIsModalCreateProspostaOpen(true);
-    };
+    }
 
-    const closeModalProposta = (tipo: string) => {
+    const closeModalProposta = () => {
         setIsModalCreateProspostaOpen(false);
     };
-
     
     const openModalCreateAnuncio = () => {
         if (!user){
@@ -222,10 +290,12 @@ const HomePage = () => {
                 fetchUserData(userId, token)
                 loadAnuncios(userId, token ?? undefined, true);
                 setUser(true)
+                return;
             } catch (error) {
                 console.error('Erro ao parsear usuário:', error);
                 localStorage.removeItem('user');
                 router.replace('/login');
+                return;
             }
             
         }
@@ -257,10 +327,10 @@ const HomePage = () => {
                 />
             </div>
 
-            <div className="pt-24 bg-background min-h-screen p-6">
+            <div className="pt-20 bg-background min-h-screen p-6">
                 <div className="fixed top-20 left-0 right-0 z-40 bg-background px-4 sm:px-6">
                 {/* Container para busca e filtro */}
-                <div className="max-w-4xl mx-auto mb-6">
+                <div className="max-w-4xl mx-auto mb-3">
                     <div className="flex justify-between space-x-4">
                     <div className="flex-1">
                         {/* Input de busca */}
@@ -307,84 +377,83 @@ const HomePage = () => {
                     {/* Lista de anúncios */}
                     {filteredAnuncios.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredAnuncios.map(anuncio => (
-                                <div
-                                    key={anuncio.id}
-                                    className="bg-cardBackground rounded-xl shadow-card overflow-hidden relative"
+                        {filteredAnuncios.map(anuncio => (
+                        <div
+                            key={anuncio.id}
+                            className="bg-cardBackground rounded-xl shadow-card overflow-hidden relative flex flex-col"
+                        >
+                            <div className="relative w-full h-56 overflow-hidden">
+                            <Image
+                                src={anuncio.fotoUrl || '/images/default-image.png'}
+                                alt={`Imagem do anúncio ${anuncio.id}`}
+                                width={500}
+                                height={300}
+                                className="w-full h-full object-cover"
+                            />
+                            </div>
+
+                            <div className="p-6 flex flex-col flex-grow">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl text-white font-semibold">{anuncio.titulo}</h2>
+                                <button
+                                className={`flex items-center py-2 px-4 rounded-xl ${consoleButtonStyles[anuncio.consoleId]}`}
                                 >
-                                    <div className="relative w-full h-56 overflow-hidden">
-                                        <Image
-                                            src={anuncio.fotoUrl || '/images/default-image.png'}
-                                            alt={`Imagem do anúncio ${anuncio.id}`}
-                                            width={500}
-                                            height={300}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
+                                <Image
+                                    src={consoleImages[anuncio.consoleId] || '/images/default-console.png'}
+                                    alt={`Console ${anuncio.consoleId}`}
+                                    width={50}
+                                    height={50}
+                                    className="mr-2"
+                                />
+                                </button>
+                            </div>
 
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h2 className="text-xl text-white font-semibold">
-                                                {anuncio.titulo}
-                                            </h2>
-                                            <button
-                                                className={`flex items-center py-2 px-4 rounded-xl ${consoleButtonStyles[anuncio.consoleId]}`}
-                                            >
-                                                <Image
-                                                    src={consoleImages[anuncio.consoleId] || '/images/default-console.png'}
-                                                    alt={`Console ${anuncio.consoleId}`}
-                                                    width={50}
-                                                    height={50}
-                                                    className="mr-2"
-                                                />
-                                            </button>
-                                        </div>
+                            <p className="text-white mt-2">{anuncio.descricao}</p>
 
-                                        <p className="text-white mt-2">{anuncio.descricao}</p>
-
-                                        <div className="flex justify-between items-center mt-6">
-                                            <p className="text-2xl text-white font-bold">
-                                                R${anuncio.valor}
-                                            </p>
-                                        </div>
-
-                                        <div className="mt-6 flex gap-4 justify-center">
-                                            {anuncio.venda && !anuncio.troca && (
-                                                <button 
-                                                    className="bg-buttonBuy text-white px-6 py-3 rounded-full w-auto"
-                                                    onClick={() => openModalProposta('Comprar')}
-                                                >
-                                                    Comprar
-                                                </button>
-                                            )}
-                                            {anuncio.troca && !anuncio.venda && (
-                                                <button
-                                                    className="bg-buttonTrade text-white px-6 py-3 rounded-full w-auto"
-                                                    onClick={() => openModalProposta('Trocar')}
-                                                >
-                                                    Trocar
-                                                </button>
-                                            )}
-                                            {anuncio.venda && anuncio.troca && (
-                                                <>
-                                                    <button 
-                                                        className="bg-buttonBuy text-white px-6 py-3 rounded-full w-auto"
-                                                        onClick={() => openModalProposta('Comprar')}
-                                                    >
-                                                        Comprar
-                                                    </button>
-                                                    <button 
-                                                        className="bg-buttonTrade text-white px-6 py-3 rounded-full w-auto"
-                                                        onClick={() => openModalProposta('Trocar')}
-                                                    >
-                                                        Trocar
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
+                            {anuncio.venda && (
+                                <div className="flex justify-between items-center mt-6">
+                                <p className="text-2xl text-white font-bold">R${anuncio.valor}</p>
                                 </div>
-                            ))}
+                            )}
+
+                            {/* Seção dos botões */}
+                            <div className="mt-6 flex gap-4 justify-center mt-auto">
+                                {anuncio.venda && !anuncio.troca && (
+                                <button
+                                    className="bg-buttonBuy text-white px-6 py-3 rounded-full w-auto"
+                                    onClick={() => openModalProposta('Comprar', anuncio.id)}
+                                >
+                                    Comprar
+                                </button>
+                                )}
+                                {anuncio.troca && !anuncio.venda && (
+                                <button
+                                    className="bg-buttonTrade text-white px-6 py-3 rounded-full w-auto"
+                                    onClick={() => openModalProposta('Trocar', anuncio.id)}
+                                >
+                                    Trocar
+                                </button>
+                                )}
+                                {anuncio.venda && anuncio.troca && (
+                                <>
+                                    <button
+                                    className="bg-buttonBuy text-white px-6 py-3 rounded-full w-auto"
+                                    onClick={() => openModalProposta('Comprar', anuncio.id)}
+                                    >
+                                    Comprar
+                                    </button>
+                                    <button
+                                    className="bg-buttonTrade text-white px-6 py-3 rounded-full w-auto"
+                                    onClick={() => openModalProposta('Trocar', anuncio.id)}
+                                    >
+                                    Trocar
+                                    </button>
+                                </>
+                                )}
+                            </div>
+                            </div>
+                        </div>
+                        ))}
                         </div>
                     ) : (
                         <p className="text-center text-white">Sem anúncios disponíveis.</p>
@@ -577,19 +646,22 @@ const HomePage = () => {
                                 Cancelar
                             </button>
                             <button
-                                className="bg-[#012AE1] text-white px-4 py-2 rounded-lg hover:bg-[#00C898] transition"
-                                onClick={() => {
-                                    setIsModalCreateProspostaOpen(false);
-                                }}
+                                disabled={buttonLoading}
+                                onClick={() => handleCreateProposta(newProposta)}
+                                className="bg-[#012AE1] text-white px-4 py-2 rounded-lg hover:bg-[#00C898] transition flex justify-center items-center"
                             >
-                                Enviar
+                                {buttonLoading ? (
+                                    <MdAutorenew className="animate-spin text-white text-2xl" />
+                                ) : (
+                                    <>
+                                        Criar
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-
-
 
             <ToastContainer 
                 position="top-right"
