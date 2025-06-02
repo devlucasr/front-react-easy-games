@@ -71,23 +71,19 @@ const DashboardUser = () => {
   const fetchUserData = useCallback(async (userId: string, token: string) => {
     try {
       const response = await getUserById(userId, token)
-
-      if (response.status === 401) {
+  
+      if (response.status === 401 || response.status === 404) {
         handleSignOut();
         return;
       }
-
-      if (!response.ok) {
-        throw new Error('Erro ao carregar dados do usuário');
-      }
-
-      const data = await response.json();
-      setUser(data?.user)
-      setNome(data?.user?.nome)
-      setSobrenome(data?.user?.sobrenome)
-      setCelular(data?.user?.celular)
-      setCep(data?.user?.endereco?.cep)
-      setPhotoUrl(data?.user?.fotoUrl)
+  
+      const user = response.user;
+      setUser(user);
+      setNome(user?.nome);
+      setSobrenome(user?.sobrenome);
+      setCelular(user?.celular);
+      setCep(user?.endereco?.cep);
+      setPhotoUrl(user?.fotoUrl);
     } catch (error) {
       handleSignOut();
       console.error(error);
@@ -95,6 +91,7 @@ const DashboardUser = () => {
       setLoading(false);
     }
   }, [handleSignOut]);
+  
 
   const loadAnuncios = useCallback(async (userId: string, token: string) => {
     try {
