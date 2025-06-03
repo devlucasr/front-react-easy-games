@@ -1029,7 +1029,7 @@ const DashboardUser = () => {
                         </div>
 
                         {/* Valor */}
-                        {proposta.anuncio.venda && proposta.valor !== undefined && (
+                        {proposta.anuncio.venda && proposta.valor !== 0 && (
                           <div className="flex items-center text-white text-base font-semibold gap-1">
                             <MdAttachMoney className="text-green-400 text-xl" />
                             {proposta.valor.toFixed(2)}

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import { registerUser } from '../services/userService'
 import 'react-toastify/dist/ReactToastify.css'
+import Link from "next/link"
 
 const Register = () => {
   const [nome, setNome] = useState('')
@@ -161,6 +162,12 @@ const Register = () => {
               Cadastrar
             </button>
           </form>
+          <div className="mt-4 text-center">
+            <span className="text-text">Já possui conta?</span>
+            <Link href="/login" className="text-buttonTrade font-bold ml-2">
+              Realizar login
+            </Link>
+          </div>
         </div>
       </div>
 

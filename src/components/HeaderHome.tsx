@@ -153,38 +153,42 @@ const HeaderHome = ({ user }: { user: UserProps }) => {
             </button>
           </div>
         )}
-        {isValidAvatar ? (
-          <div className="relative">
-            <div className="flex items-center space-x-2">
-              <Image
-                src={user.avatarUser}
-                alt="User Avatar"
-                width={50}
-                height={50}
-                className="w-12 h-12 rounded-full cursor-pointer"
-                onClick={() => router.push("/dashboardUser")}
-              />
-              <MdArrowDropDown
-                size={20}
-                className="cursor-pointer transition-all duration-300 ease-in-out hover:rotate-180"
-                onClick={() => setDropdownVisible(!dropdownVisible)}
-              />
-            </div>
+        <div className="relative flex items-center space-x-2">
+          {isValidAvatar ? (
+            <Image
+              src={user.avatarUser}
+              alt="User Avatar"
+              width={50}
+              height={50}
+              className="w-12 h-12 rounded-full cursor-pointer"
+              onClick={() => router.push("/dashboardUser")}
+            />
+          ) : (
+            <MdPerson
+              size={25}
+              className="cursor-pointer"
+              onClick={() => router.push("/dashboardUser")}
+            />
+          )}
 
-            {dropdownVisible && (
-              <div className="absolute right-0 mt-2 bg-cardBackground rounded-md shadow-lg py-2 w-32 z-50 transition-all duration-300 ease-in-out opacity-100">
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-white bg-buttonLogout hover:bg-buttonLogoutHover rounded-md text-base transition-all duration-200 ease-in-out"
-                >
-                  Sair
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <MdPerson className="cursor-pointer" size={25} onClick={() => router.push("/dashboardUser")} />
-        )}
+          <MdArrowDropDown
+            size={20}
+            className="cursor-pointer transition-all duration-300 ease-in-out hover:rotate-180"
+            onClick={() => setDropdownVisible(!dropdownVisible)}
+          />
+
+          {dropdownVisible && (
+            <div className="absolute right-0 top-10 bg-cardBackground rounded-md shadow-lg py-2 w-32 z-50 transition-all duration-300 ease-in-out opacity-100">
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-white bg-buttonLogout hover:bg-buttonLogoutHover rounded-md text-base transition-all duration-200 ease-in-out"
+              >
+                Sair
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

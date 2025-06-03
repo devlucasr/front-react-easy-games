@@ -6,9 +6,11 @@ export const fetchAnuncios = async (userId?: string, token?: string, excludeUser
     let url = `${process.env.NEXT_PUBLIC_URL_BACKEND}/anuncio`;
 
     if (excludeUser && userId) {
-      url += `?excludeUserId=${userId}`;
+      url += `?excludeUserId=${userId}&excludeStatus=fechado`;
     } else if (userId) {
-      url += `?userId=${userId}`;
+      url += `?userId=${userId}&excludeStatus=fechado`;
+    } else {
+      url += `?excludeStatus=fechado`;
     }
 
     const headers = token
