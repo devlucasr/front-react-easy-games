@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import '../styles/globals.css';
 import Image from 'next/image';
 import { MdAutorenew, MdAdd, MdSearch, MdCheckCircle, MdCancel } from "react-icons/md";
 import { fetchAnuncios, createAnuncio } from '../services/anuncioService';

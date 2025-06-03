@@ -7,7 +7,6 @@ import { BiShowAlt, BiHide, BiUser } from 'react-icons/bi'
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import { useAuth } from '../context/AuthContext'
 import 'react-toastify/dist/ReactToastify.css'
-import '../styles/toastStyles.css'
 import { AxiosError } from 'axios'
 
 const Login = () => {
