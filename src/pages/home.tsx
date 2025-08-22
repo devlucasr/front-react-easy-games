@@ -1,19 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
+import Slider from '@mui/material/Slider'
 import { useRouter } from 'next/router';
 import Image from 'next/image';
-import { MdAutorenew, MdAdd, MdSearch, MdCheckCircle, MdCancel } from "react-icons/md";
-import { fetchAnuncios, createAnuncio } from '../services/anuncioService';
+import { MdAutorenew, MdAdd, MdCheckCircle, MdCancel } from "react-icons/md";
+import { fetchAnuncios, createAnuncio, fetchAnunciosComFiltro } from '../services/anuncioService';
 import HeaderHome from "../components/HeaderHome";
 import { toast, ToastContainer, Bounce } from 'react-toastify'
-import { AnuncioCreate, PropostaCreate, Anuncio } from '../types/types';
+import { AnuncioCreate, PropostaCreate, Anuncio, FiltroAnuncioParams } from '../types/types';
 import { createProposta } from '@/services/propostaService';
 
 const consoleImages: Record<number, string> = {
-    1: '/images/ps4.png',
-    2: '/images/ps4.png',
-    3: '/images/ps4.png',
+    1: '/images/ps1.png',
+    2: '/images/ps2.png',
+    3: '/images/ps3.png',
     4: '/images/ps4.png',
-    5: '/images/ps4.png',
+    5: '/images/xbox.png',
     6: '/images/xbox.png',
     7: '/images/xbox.png',
     8: '/images/xbox.png',
@@ -24,7 +25,7 @@ const consoleButtonStyles: Record<number, string> = {
     2: 'bg-black',
     3: 'bg-black',
     4: 'bg-black',
-    5: 'bg-black',
+    5: 'bg-green-500',
     6: 'bg-green-500',
     7: 'bg-green-500',
     8: 'bg-green-500',
@@ -46,7 +47,12 @@ const HomePage = () => {
     const [photoUrl, setPhotoUrl] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [selectedFilter, setSelectedFilter] = useState<string>('');
+    const [showFilters, setShowFilters] = useState(false)
+    const [selectedConsole, setSelectedConsole] = useState<number | ''>('')
+    const [selectedRating, setSelectedRating] = useState<number>(0)
+    const [selectedTipo, setSelectedTipo] = useState<string>('')
+    const [minValue, setMinValue] = useState<number>(10)
+    const [maxValue, setMaxValue] = useState<number>(2000)    
     const [isModalCreateAnuncioOpen, setIsModalCreateAnuncioOpen] = useState(false);
     const [isModalCreateProspostaOpen, setIsModalCreateProspostaOpen] = useState(false);
     const [modalType, setModalType] = useState("");
@@ -96,6 +102,45 @@ const HomePage = () => {
             setLoading(false);
         }
     }, []);
+
+    const loadAplicaFiltros = useCallback(async () => {
+        const token = localStorage.getItem('token')
+        const userString = localStorage.getItem('user')
+        const userId = userString ? JSON.parse(userString).id : undefined
+      
+        const filtros: FiltroAnuncioParams = {
+            titulo: searchTerm || undefined,
+            descricao: searchTerm || undefined,
+            userId: userId ? String(userId) : undefined,
+            consoleId: selectedConsole || undefined,
+            avaliacaoMinima: selectedRating > 0 ? selectedRating : undefined,
+            tipo: ['venda', 'troca', 'ambos'].includes(selectedTipo) ? selectedTipo as FiltroAnuncioParams['tipo'] : undefined,
+            valorMin: minValue,
+            valorMax: maxValue
+        }
+      
+        try {
+          const anunciosFiltrados = await fetchAnunciosComFiltro(filtros, token || undefined)
+          setAnuncios(anunciosFiltrados)
+          setFilteredAnuncios(anunciosFiltrados)
+          setShowFilters(false)
+        } catch (err) {
+          console.error('Erro ao aplicar filtros:', err)
+          toast.error('Erro ao aplicar filtros. Tente novamente.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: true,
+            theme: 'colored'
+          })
+        }
+      }, [
+        searchTerm,
+        selectedConsole,
+        selectedRating,
+        selectedTipo,
+        minValue,
+        maxValue
+    ])
 
     const fetchUserData = useCallback (async (userId: string, token: string) => {
         try {
@@ -326,53 +371,154 @@ const HomePage = () => {
                 />
             </div>
 
-            <div className="pt-20 bg-background min-h-screen p-6">
-                <div className="fixed top-20 left-0 right-0 z-40 bg-background px-4 sm:px-6">
-                {/* Container para busca e filtro */}
-                <div className="max-w-4xl mx-auto mb-3">
-                    <div className="flex justify-between space-x-4">
-                    <div className="flex-1">
-                        {/* Input de busca */}
-                        <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar jogos"
-                            className="w-full p-3 rounded-lg bg-cardBackground text-white text-center"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <div className="absolute top-0 right-3 bottom-0 flex items-center text-white">
-                            <MdSearch size={24} />
-                        </div>
-                        </div>
-                    </div>
+            <div className="pt-22 bg-background min-h-screen p-6">
+                <div className="fixed top-20 left-0 right-0 z-40 bg-background px-4 sm:px-6 pt-4">
+                    {/* Container principal filtros */}
+                    <div className="max-w-5xl mx-auto mb-6">
+                        {/* Barra de busca e botão de filtros */}
+                        <div className="flex flex-wrap sm:flex-nowrap justify-center gap-3">
+                            {/* Botão de Filtros */}
+                            <button
+                            onClick={() => setShowFilters(true)}
+                            className="w-full sm:w-auto sm:order-1 order-0 bg-[#012AE1] hover:bg-[#00C898] transition text-white px-6 py-2 rounded-lg"
+                            >
+                            Filtros
+                            </button>
 
-                    {/* Filtro com largura ajustada para telas grandes */}
-                    <div className="sm:w-[40%] md:w-[30%] lg:w-[15%] h-12 sm:h-10 md:h-12 lg:h-14">
-                        <select
-                        value={selectedFilter}
-                        onChange={(e) => setSelectedFilter(e.target.value)}
-                        className="w-full p-3 rounded-lg bg-cardBackground text-white"
-                        >
-                        <option value="">Filtros</option>
-                        <option value="valor">Valor</option>
-                        <option value="console">Console</option>
-                        <option value="status">Status</option>
-                        </select>
+                            {/* Input de busca */}
+                            <div className="relative w-full sm:w-[50%] order-1">
+                                <input
+                                    type="text"
+                                    placeholder="Digite a descrição ou título ..."
+                                    className="w-full p-3 rounded-lg bg-cardBackground text-white pl-4 pr-10"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Modal lateral de filtros */}
+                        {showFilters && (
+                            <div
+                            className="fixed inset-0 z-50 bg-black bg-opacity-40 backdrop-blur-sm flex justify-end pt-[80px]"
+                            onClick={() => setShowFilters(false)}
+                            >
+                            <div
+                                className="bg-cardBackground w-full sm:w-[400px] h-full p-6 overflow-y-auto shadow-lg"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Cabeçalho */}
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-white text-lg font-semibold">Filtrar Anúncios</h2>
+                                    <button
+                                        onClick={() => setShowFilters(false)}
+                                        className="text-white text-xl hover:text-red-500"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                {/* Filtro por Console */}
+                                <label className="block text-white text-sm mb-1">Console</label>
+                                <select
+                                value={selectedConsole}
+                                onChange={(e) => setSelectedConsole(Number(e.target.value))}
+                                className="w-full p-3 rounded-lg bg-[#1A1B2D] text-white mb-4"
+                                >
+                                    <option value="">Todos Consoles</option>
+                                    <option value={1}>PS1</option>
+                                    <option value={2}>PS2</option>
+                                    <option value={3}>PS3</option>
+                                    <option value={4}>PS4</option>
+                                    <option value={5}>XBOX 360</option>
+                                    <option value={6}>XBOX ONE</option>
+                                    <option value={7}>XBOX SERIES</option>
+                                </select>
+
+                                {/* Avaliação */}
+                                <label className="block text-white text-sm mb-1">Avaliação</label>
+                                <select
+                                value={selectedRating}
+                                onChange={(e) => setSelectedRating(Number(e.target.value))}
+                                className="w-full p-3 rounded-lg bg-[#1A1B2D] text-white mb-4"
+                                >
+                                    <option value={0}>Todas avaliações</option>
+                                    <option value={5}>⭐ 5 estrelas</option>
+                                    <option value={4}>⭐ 4+ estrelas</option>
+                                    <option value={3}>⭐ 3+ estrelas</option>
+                                </select>
+
+                                {/* Tipo */}
+                                <label className="block text-white text-sm mb-1">Tipo</label>
+                                <select
+                                value={selectedTipo}
+                                onChange={(e) => setSelectedTipo(e.target.value)}
+                                className="w-full p-3 rounded-lg bg-[#1A1B2D] text-white mb-4"
+                                >
+                                    <option value="">Todos tipos</option>
+                                    <option value="ambos">Venda e troca</option>
+                                    <option value="venda">Venda</option>
+                                    <option value="troca">Troca</option>
+                                </select>
+
+                                <div className="mb-10">
+                                    <label className="block text-white text-sm mb-2">Faixa de Valor</label>
+                                    <Slider
+                                        value={[minValue, maxValue]}
+                                        onChange={(_, newValue) => {
+                                            const [min, max] = newValue as number[]
+                                            setMinValue(min)
+                                            setMaxValue(max)
+                                        }}
+                                        min={10}
+                                        max={2000}
+                                        valueLabelDisplay="off"
+                                    />
+                                    <div className="flex justify-between text-sm text-gray-300 mt-2">
+                                        <span>R${minValue}</span>
+                                        <span>R${maxValue}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3 justify-between">
+                                    {/* Botão de aplicar */}
+                                    <button
+                                        onClick={loadAplicaFiltros}
+                                        className="flex-1 min-w-[48%] bg-[#012AE1] hover:bg-[#00C898] transition text-white px-6 py-3 rounded-lg"
+                                    >
+                                        Aplicar Filtros
+                                    </button>
+
+                                    {/* Botão de limpar */}
+                                    <button
+                                        onClick={() => {
+                                        setSelectedConsole('');
+                                        setSelectedRating(0);
+                                        setSelectedTipo('ambos');
+                                        setMinValue(10);
+                                        setMaxValue(2000);
+                                        setShowFilters(false);
+                                        loadAnuncios();
+                                        }}
+                                        className="flex-1 min-w-[48%] bg-gray-600 hover:bg-gray-500 transition text-white px-6 py-3 rounded-lg"
+                                    >
+                                        Limpar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                            </div>
+                        )}
                     </div>
-                    </div>
+                    <button
+                        onClick={openModalCreateAnuncio}
+                        className="bg-[#012AE1] text-white px-6 py-3 rounded-lg hover:bg-[#00C898] transition block mx-auto mb-6 sm:mb-4 sm:w-auto w-full flex justify-center items-center"
+                    >
+                        <MdAdd size={24} className="mr-2" />
+                        Criar Anúncio
+                    </button>
                 </div>
 
-                <button
-                    onClick={openModalCreateAnuncio}
-                    className="bg-[#012AE1] text-white px-6 py-3 rounded-lg hover:bg-[#00C898] transition block mx-auto mb-6 sm:mb-4 sm:w-auto w-full flex justify-center items-center"
-                >
-                    <MdAdd size={24} className="mr-2" />
-                    Criar Anúncio
-                 </button>
-                </div>
-
-                <div style={{ paddingTop: '138px' }}>
+                <div className="pt-[208px] sm:pt-[144px]">
                     {/* Lista de anúncios */}
                     {filteredAnuncios.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -455,7 +601,9 @@ const HomePage = () => {
                         ))}
                         </div>
                     ) : (
-                        <p className="text-center text-white">Sem anúncios disponíveis.</p>
+                        <div className="flex items-center justify-center min-h-[200px]">
+                            <p className="text-center text-white text-lg">Sem anúncios disponíveis.</p>
+                        </div>
                     )}
                 </div>
             </div>

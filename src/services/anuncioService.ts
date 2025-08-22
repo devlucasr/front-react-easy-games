@@ -27,6 +27,50 @@ export const fetchAnuncios = async (userId?: string, token?: string, excludeUser
   }
 };
 
+export const fetchAnunciosComFiltro = async (
+  filters: {
+    titulo?: string
+    descricao?: string
+    status?: string
+    userId?: string
+    consoleId?: number
+    avaliacaoMinima?: number
+    tipo?: 'venda' | 'troca' | 'ambos'
+    valorMin?: number
+    valorMax?: number
+  },
+  token?: string
+): Promise<Anuncio[]> => {
+  try {
+    const params = new URLSearchParams()
+
+    if (filters.titulo) params.append('titulo', filters.titulo)
+    if (filters.descricao) params.append('descricao', filters.descricao)
+    if (filters.status) params.append('status', filters.status)
+    if (filters.userId) params.append('userId', filters.userId)
+    if (filters.consoleId !== undefined) params.append('consoleId', String(filters.consoleId))
+    if (filters.avaliacaoMinima !== undefined) params.append('avaliacaoMinima', String(filters.avaliacaoMinima))
+    if (filters.tipo) params.append('tipo', filters.tipo)
+    if (filters.valorMin !== undefined) params.append('valorMin', String(filters.valorMin))
+    if (filters.valorMax !== undefined) params.append('valorMax', String(filters.valorMax))
+
+    const url = `${process.env.NEXT_PUBLIC_URL_BACKEND}/anuncio?${params.toString()}`
+
+    const headers = token
+      ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      : {}
+
+    const response = await axios.get(url, { headers })
+
+    return response.data?.anuncios?.anuncios || []
+  } catch (error: unknown) {
+    if(axios.isAxiosError(error) && error.response?.data?.message === 'Anúncio não encontrado.'){
+      return []
+    }
+    return []
+  }
+}
+
 export const createAnuncio = async (
   anuncioData: AnuncioCreate,
   token: string

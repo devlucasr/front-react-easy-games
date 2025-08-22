@@ -82,6 +82,20 @@ export interface Anuncio {
   updatedAt: string;
 }
 
+export type TipoAnuncio = 'venda' | 'troca' | 'ambos'
+
+export interface FiltroAnuncioParams {
+  titulo?: string
+  descricao?: string
+  status?: StatusAnuncio
+  userId?: string
+  consoleId?: number
+  avaliacaoMinima?: number
+  tipo?: TipoAnuncio
+  valorMin?: number 
+  valorMax?: number
+}
+
 export interface Avaliacao {
   id: number
   estrelas: number

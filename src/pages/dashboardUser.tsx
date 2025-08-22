@@ -992,7 +992,9 @@ const DashboardUser = () => {
                     const celularLimpo = celular.replace(/\D/g, '');
                     const linkWhatsApp = `https://wa.me/55${celularLimpo}`;
 
-                    
+                    const cidade = proposta.tipo === 'recebida'
+                      ? proposta.user.endereco?.cidade
+                      : proposta.anuncio.user.endereco?.cidade;
 
                     return (
                       <div
@@ -1012,9 +1014,7 @@ const DashboardUser = () => {
 
                             <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
                               <MdLocationPin className="text-base text-white" />
-                              {proposta.tipo === 'recebida'
-                                ? proposta.anuncio.user.endereco?.cidade
-                                : proposta.user.endereco?.cidade}
+                              {cidade}
                             </p>
 
                             <div className="flex gap-2 mt-2">
