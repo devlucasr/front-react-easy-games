@@ -6,7 +6,7 @@ import { MdAutorenew, MdAdd, MdCheckCircle, MdCancel } from "react-icons/md";
 import { fetchAnuncios, createAnuncio, fetchAnunciosComFiltro } from '../services/anuncioService';
 import HeaderHome from "../components/HeaderHome";
 import { toast, ToastContainer, Bounce } from 'react-toastify'
-import { AnuncioCreate, PropostaCreate, Anuncio, FiltroAnuncioParams } from '../types/types';
+import { AnuncioCreate, PropostaCreate, Anuncio } from '../types/types';
 import { createProposta } from '@/services/propostaService';
 
 const consoleImages: Record<number, string> = {
