@@ -108,8 +108,10 @@ const HomePage = () => {
         const userString = localStorage.getItem('user')
         const loggedId: number | undefined = userString ? JSON.parse(userString).id : undefined
     
-        const compact = <T extends Record<string, any>>(obj: T): Partial<T> =>
-            Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null)) as Partial<T>
+        const compact = <T extends Record<string, unknown>>(obj: T): Partial<T> =>
+          Object.fromEntries(
+            Object.entries(obj).filter(([, v]) => v !== undefined && v !== null)
+          ) as Partial<T>
     
         const isTipoValido = ['venda', 'troca', 'ambos'].includes(selectedTipo)
         const tipo = isTipoValido ? (selectedTipo as 'venda' | 'troca' | 'ambos') : undefined
