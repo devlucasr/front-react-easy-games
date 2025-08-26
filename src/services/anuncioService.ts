@@ -32,9 +32,9 @@ export const fetchAnunciosComFiltro = async (
     titulo?: string
     descricao?: string
     status?: string
-    userId?: string
+    excludeUserId?: string
     consoleId?: number
-    avaliacaoMinima?: number
+    avaliacaoMin?: number
     tipo?: 'venda' | 'troca' | 'ambos'
     valorMin?: number
     valorMax?: number
@@ -44,29 +44,38 @@ export const fetchAnunciosComFiltro = async (
   try {
     const params = new URLSearchParams()
 
-    if (filters.titulo) params.append('titulo', filters.titulo)
-    if (filters.descricao) params.append('descricao', filters.descricao)
-    if (filters.status) params.append('status', filters.status)
-    if (filters.userId) params.append('userId', filters.userId)
-    if (filters.consoleId !== undefined) params.append('consoleId', String(filters.consoleId))
-    if (filters.avaliacaoMinima !== undefined) params.append('avaliacaoMinima', String(filters.avaliacaoMinima))
-    if (filters.tipo) params.append('tipo', filters.tipo)
-    if (filters.valorMin !== undefined) params.append('valorMin', String(filters.valorMin))
-    if (filters.valorMax !== undefined) params.append('valorMax', String(filters.valorMax))
+    const {
+      titulo,
+      descricao,
+      status,
+      excludeUserId,
+      consoleId,
+      avaliacaoMin,
+      tipo,
+      valorMin,
+      valorMax
+    } = filters
+
+    if (titulo) params.append('titulo', titulo)
+    if (descricao) params.append('descricao', descricao)
+    if (status) params.append('status', status)
+    if (excludeUserId) params.append('excludeUserId', String(excludeUserId))
+    if (consoleId !== undefined) params.append('consoleId', String(consoleId))
+    if (avaliacaoMin !== undefined) params.append('avaliacaoMin', String(avaliacaoMin))
+    if (tipo) params.append('tipo', tipo)
+
+    const shouldSendPrice = tipo !== 'troca'
+    if (shouldSendPrice && valorMin !== undefined) params.append('valorMin', String(valorMin))
+    if (shouldSendPrice && valorMax !== undefined) params.append('valorMax', String(valorMax))
 
     const url = `${process.env.NEXT_PUBLIC_URL_BACKEND}/anuncio?${params.toString()}`
-
     const headers = token
       ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       : {}
 
     const response = await axios.get(url, { headers })
-
-    return response.data?.anuncios?.anuncios || []
-  } catch (error: unknown) {
-    if(axios.isAxiosError(error) && error.response?.data?.message === 'Anúncio não encontrado.'){
-      return []
-    }
+    return response.data?.anuncios ?? []
+  } catch {
     return []
   }
 }
