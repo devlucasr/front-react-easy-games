@@ -32,7 +32,7 @@ export const fetchAnunciosComFiltro = async (
     titulo?: string
     descricao?: string
     status?: string
-    excludeUserId?: string
+    excludeUserId?: string | number
     consoleId?: number
     avaliacaoMin?: number
     tipo?: 'venda' | 'troca' | 'ambos'
@@ -56,25 +56,42 @@ export const fetchAnunciosComFiltro = async (
       valorMax
     } = filters
 
-    if (titulo) params.append('titulo', titulo)
-    if (descricao) params.append('descricao', descricao)
-    if (status) params.append('status', status)
-    if (excludeUserId) params.append('excludeUserId', String(excludeUserId))
-    if (consoleId !== undefined) params.append('consoleId', String(consoleId))
-    if (avaliacaoMin !== undefined) params.append('avaliacaoMin', String(avaliacaoMin))
-    if (tipo) params.append('tipo', tipo)
+    const hasText = (v?: string) => typeof v === 'string' && v.trim() !== ''
+    const isFiniteNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+
+    if (hasText(titulo)) params.append('titulo', String(titulo).trim())
+    if (hasText(descricao)) params.append('descricao', String(descricao).trim())
+    if (hasText(status)) params.append('status', String(status).trim())
+
+    if (excludeUserId !== undefined && excludeUserId !== null && String(excludeUserId).trim() !== '') {
+      params.append('excludeUserId', String(excludeUserId).trim())
+    }
+
+    if (isFiniteNum(consoleId)) params.append('consoleId', String(consoleId))
+    if (isFiniteNum(avaliacaoMin)) params.append('avaliacaoMin', String(avaliacaoMin))
+
+    if (tipo === 'venda' || tipo === 'troca' || tipo === 'ambos') {
+      params.append('tipo', tipo)
+    }
 
     const shouldSendPrice = tipo !== 'troca'
-    if (shouldSendPrice && valorMin !== undefined) params.append('valorMin', String(valorMin))
-    if (shouldSendPrice && valorMax !== undefined) params.append('valorMax', String(valorMax))
+    if (shouldSendPrice && isFiniteNum(valorMin)) params.append('valorMin', String(valorMin))
+    if (shouldSendPrice && isFiniteNum(valorMax)) params.append('valorMax', String(valorMax))
 
     const url = `${process.env.NEXT_PUBLIC_URL_BACKEND}/anuncio?${params.toString()}`
     const headers = token
       ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       : {}
 
-    const response = await axios.get(url, { headers })
-    return response.data?.anuncios ?? []
+    const { data } = await axios.get(url, { headers })
+
+    const items =
+      Array.isArray(data?.anuncios) ? data.anuncios
+      : Array.isArray(data?.anuncios?.anuncios) ? data.anuncios.anuncios
+      : Array.isArray(data) ? data
+      : []
+
+    return items as Anuncio[]
   } catch {
     return []
   }
