@@ -106,41 +106,41 @@ const HomePage = () => {
     const loadAplicaFiltros = useCallback(async () => {
         const token = localStorage.getItem('token')
         const userString = localStorage.getItem('user')
-        const userId = userString ? JSON.parse(userString).id : undefined
-      
-        const filtros: FiltroAnuncioParams = {
+        const loggedId: number | undefined = userString ? JSON.parse(userString).id : undefined
+    
+        const compact = <T extends Record<string, any>>(obj: T): Partial<T> =>
+            Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== null)) as Partial<T>
+    
+        const isTipoValido = ['venda', 'troca', 'ambos'].includes(selectedTipo)
+        const tipo = isTipoValido ? (selectedTipo as 'venda' | 'troca' | 'ambos') : undefined
+    
+        const filtros = compact({
             titulo: searchTerm || undefined,
             descricao: searchTerm || undefined,
-            userId: userId ? String(userId) : undefined,
+            excludeUserId: loggedId ? String(loggedId) : undefined,
             consoleId: selectedConsole || undefined,
-            avaliacaoMinima: selectedRating > 0 ? selectedRating : undefined,
-            tipo: ['venda', 'troca', 'ambos'].includes(selectedTipo) ? selectedTipo as FiltroAnuncioParams['tipo'] : undefined,
-            valorMin: minValue,
-            valorMax: maxValue
-        }
-      
+            avaliacaoMin: selectedRating > 0 ? selectedRating : undefined,
+            tipo,
+            // se for troca, não envia faixa de valor
+            valorMin: tipo === 'troca' ? undefined : minValue,
+            valorMax: tipo === 'troca' ? undefined : maxValue
+        })
+    
         try {
-          const anunciosFiltrados = await fetchAnunciosComFiltro(filtros, token || undefined)
-          setAnuncios(anunciosFiltrados)
-          setFilteredAnuncios(anunciosFiltrados)
-          setShowFilters(false)
+            const anunciosFiltrados = await fetchAnunciosComFiltro(filtros, token || undefined)
+            setAnuncios(anunciosFiltrados)
+            setFilteredAnuncios(anunciosFiltrados)
+            setShowFilters(false)
         } catch (err) {
-          console.error('Erro ao aplicar filtros:', err)
-          toast.error('Erro ao aplicar filtros. Tente novamente.', {
+            console.error('Erro ao aplicar filtros:', err)
+            toast.error('Erro ao aplicar filtros. Tente novamente.', {
             position: 'top-right',
             autoClose: 3000,
             hideProgressBar: true,
             theme: 'colored'
-          })
+            })
         }
-      }, [
-        searchTerm,
-        selectedConsole,
-        selectedRating,
-        selectedTipo,
-        minValue,
-        maxValue
-    ])
+    }, [searchTerm, selectedConsole, selectedRating, selectedTipo, minValue, maxValue])
 
     const fetchUserData = useCallback (async (userId: string, token: string) => {
         try {
